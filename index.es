@@ -26,7 +26,8 @@ export const reactClass = connect(
     this.state = {
       ship_targets: this.simplfyship(),
       show_shipList: false,
-      input_shipList: ''
+      input_shipList: '',
+      shiphtml:''
     }
   }
 
@@ -39,7 +40,7 @@ export const reactClass = connect(
       searchShipId: e.currentTarget.value,
       searchType: 'ship'
     });
-    this.get_statistic_info(e.currentTarget.value);
+    this.fetchShipData(e.currentTarget.value);
   }
 
   simplfyship() {
@@ -156,6 +157,28 @@ export const reactClass = connect(
     this.handleFormChange(e);
   };
 
+  fetchShipData(shipid){
+    var $ships = this.props.$ships;
+    var shipname = $ships[shipid].api_name;
+    var url = "https://zh.moegirl.org/"+encodeURIComponent("舰队")+"Collection:"+encodeURIComponent(shipname);
+    var that=this;
+    fetch(url).then(function(res){
+      return res.text();
+    }).then(function(response) {
+      that.parseShipResponse(response);
+    })
+  }
+
+  parseShipResponse(response){
+    var n = response.indexOf('<table class="wikitable"');
+    var s1 = response.substring(n);
+    var n1 = s1.indexOf('</tr></table>');
+    var s2 = s1.substring(0,n1+13);
+    console.log(s2);
+    this.setState({shiphtml:s2});
+  }
+
+
 
   componentDidMount = () => {
 
@@ -212,6 +235,9 @@ export const reactClass = connect(
               </ul>
             </form>
           </Col>
+        </Row>
+        <Row>
+          <div dangerouslySetInnerHTML={{__html:this.state.shiphtml}}></div>
         </Row>
       </div>
     )

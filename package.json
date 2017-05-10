@@ -1,6 +1,6 @@
 {
   "name": "poi-plugin-breed",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "index.es",
   "description": "A plugin for lookup breed infomation",
   "author": {
@@ -8,8 +8,8 @@
     "url": "https://github.com/a26214311"
   },
   "poiPlugin": {
-    "title": "养殖资料",
-    "description": "养殖资料",
+    "title": "查询资料",
+    "description": "查询资料",
     "icon": "fa/list",
     "i18nDir": "i18n/translator",
     "apiVer": {
