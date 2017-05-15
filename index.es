@@ -16,6 +16,7 @@ export const reactClass = connect(
     horizontal: state.config.poi.layout || 'horizontal',
     $ships: state.const.$ships,
     $shipTypes: state.const.$shipTypes,
+    $slotitems: state.const.$equips,
     allmaps:state.fcd?state.fcd.map:{}
   }),
   null, null, {pure: false}
@@ -27,6 +28,9 @@ export const reactClass = connect(
       ship_targets: this.simplfyship(),
       show_shipList: false,
       input_shipList: '',
+      shipstatus:[],
+      shipid:[],
+      shipitems:[],
       shiphtml:''
     }
   }
@@ -35,13 +39,7 @@ export const reactClass = connect(
 
   }
 
-  handleFormChange(e) {
-    this.setState({
-      searchShipId: e.currentTarget.value,
-      searchType: 'ship'
-    });
-    this.fetchShipData(e.currentTarget.value);
-  }
+
 
   simplfyship() {
     try {
@@ -145,6 +143,29 @@ export const reactClass = connect(
       if (new RegExp(expStr, 'i').test(shipname))
         allship.push(id);
     });
+    var itemkeys = Object.keys(this.props.$slotitems);
+    itemkeys.map((id) => {
+      var itemname = this.props.$slotitems[id].api_name;
+      if(lowstr>='a'&&lowstr<='z'){
+        var match=true;
+        for(var i=0;i<lowstr.length;i++){
+          var x=lowstr.charCodeAt(i)-97;
+          var cs=zh[x];
+          var ce=zh[x+1];
+          if(itemname.charAt(i).localeCompare(cs)>0&&itemname.charAt(i).localeCompare(ce)<0){
+
+          }else{
+            match=false;
+            break;
+          }
+        }
+        if(match){
+          allship.push(parseInt(id)+10000);
+        }
+      }
+      if (new RegExp(expStr, 'i').test(itemname))
+        allship.push(parseInt(id)+10000);
+    });
     this.setState({ship_targets: allship, input_shipList: e.target.value})
   };
 
@@ -154,31 +175,154 @@ export const reactClass = connect(
     if (option != 0) {
       this.setState({input_shipList: $ships[option].api_name});
     }
-    this.handleFormChange(e);
+    this.handleFormChange(e,'ship');
   };
+
+  selectItem = e => {
+    e.stopPropagation();
+    let $slotitems = this.props.$slotitems, option = e.currentTarget.value;
+    if (option != 0) {
+      this.setState({input_shipList: $slotitems[option].api_name});
+    }
+    this.handleFormChange(e,'item');
+  };
+
+  changeShip = e => {
+    this.handleFormChange(e,'ship');
+  }
+
+  handleFormChange(e,type) {
+    this.setState({
+      searchShipId: e.currentTarget.value,
+      searchType: type
+    });
+    if(type=='ship'){
+      this.fetchShipData(e.currentTarget.value);
+    }else{
+      this.fetchItemData(e.currentTarget.value);
+    }
+
+  }
 
   fetchShipData(shipid){
     var $ships = this.props.$ships;
     var shipname = $ships[shipid].api_name;
-    var url = "https://zh.moegirl.org/"+encodeURIComponent("舰队")+"Collection:"+encodeURIComponent(shipname);
+    var url = "http://fleet.diablohu.com/ships/"+shipid+"/";
     var that=this;
     fetch(url).then(function(res){
       return res.text();
     }).then(function(response) {
-      that.parseShipResponse(response);
+      that.parseResponse(response);
     })
   }
 
-  parseShipResponse(response){
-    var n = response.indexOf('<table class="wikitable"');
+  parseResponse(response){
+
+    var n = response.indexOf('<main');
     var s1 = response.substring(n);
-    var n1 = s1.indexOf('</tr></table>');
-    var s2 = s1.substring(0,n1+13);
-    console.log(s2);
-    this.setState({shiphtml:s2});
+    var n1 = s1.indexOf('</main>');
+    var s2 = s1.substring(0,n1+7);
+
+    var keys = ['耐久','装甲','回避','搭载','火力','雷装','对空','对潜','航速','射程','索敌','运','油耗','弹耗'];
+    var ret = keys.map(e => {
+        return this.getElementsByHtml(s2,e);
+    });
+    var shipids = this.getAllShipId(s2);
+    var equips = this.getEquips(s2);
+    console.log(equips);
+    this.setState({shipstatus:ret,shipid:shipids,shipitems:equips});
+  }
+
+  getElementsByHtml(htmlstr,key){
+    var n = htmlstr.indexOf(key);
+    if(key==-1){
+      return 'unknown';
+    }else{
+      var s1 = htmlstr.substring(n+key.length);
+      var n1 = s1.indexOf("<em");
+      var s2 = s1.substring(n1+3);
+      var n2 = s2.indexOf("</em>");
+      var s3 = s2.substring(0,n2);
+      if(s3.indexOf('</small>')>=0){
+        var nw = s3.indexOf('</small>');
+        var sw = s3.substring(0,nw);
+        var np = sw.lastIndexOf('>');
+        s3 = sw.substring(np+1);
+      }
+      var n3 = s3.lastIndexOf(">");
+      var s4 = s3.substring(n3+1);
+      if(key=='运'){
+        var n4 = s3.indexOf('<sup');
+        var s5 = s3.substring(0,n4);
+        var n5 = s5.lastIndexOf('>');
+        var s6 = s5.substring(n5+1);
+        return s6;
+      }else{
+        return s4;
+      }
+    }
+  }
+
+  getAllShipId(htmlstr){
+    var x = htmlstr;
+    var indexstr = 'data-shipid="';
+    var n = x.indexOf(indexstr);
+    var ret = [];
+    while(n>0){
+      x=x.substring(n+indexstr.length);
+      var m = x.indexOf('"');
+      var id = x.substring(0,m);
+      ret.push(id);
+      n = x.indexOf(indexstr);
+    }
+    return ret;
+  }
+
+  getEquips(htmlstr){
+    var n1 = htmlstr.indexOf('class="equipments"');
+    var s1 = htmlstr.substring(n1);
+    var item = [];
+    for(var i=0;i<4;i++){
+      var n = s1.indexOf('<a');
+      var s2 = s1.substring(n+3);
+      s1=s2;
+      var equipid=0;
+      var carry = 0;
+      if(s2.startsWith('data-equipmentid="')){
+        var s3 = s2.substring(18);
+        var n3 = s3.indexOf('"');
+        equipid = s3.substring(0,n3);
+        var n4 = s3.indexOf('<em>');
+        var n5 = s3.indexOf('</em>');
+        carry = s3.substring(n4+4,n5);
+      }else if(s2.startsWith('class="empty"')){
+        var s3 = s2;
+        var n4 = s3.indexOf('<em>');
+        var n5 = s3.indexOf('</em>');
+        equipid = 0;
+        carry = s3.substring(n4+4,n5);
+      }else if(s2.startsWith('class="no"')){
+        equipid = -1;
+        carry = -1;
+      }
+      var ret = equipid+"_"+carry;
+      item.push(ret);
+    }
+    return item;
   }
 
 
+  fetchItemData(itemid){
+    var $slotitems = this.props.$slotitems;
+    var itemname = $slotitems[itemid].api_name;
+    var url = "https://zh.moegirl.org/"+encodeURIComponent("舰队")+"Collection:"+encodeURIComponent(itemname);
+    var that=this;
+    fetch(url).then(function(res){
+      return res.text();
+    }).then(function(response) {
+      that.parseResponse(response);
+    })
+  }
 
   componentDidMount = () => {
 
@@ -205,20 +349,34 @@ export const reactClass = connect(
     const createList = arr => {
       let out = [];
       arr.map((option) => {
-        const shipinfo = $ships[option],
-          shipname = shipinfo.api_name,
-          shiptypeid = shipinfo.api_stype,
-          shiptypename = $shipTypes[shiptypeid].api_name;
-        out.push(
-          <li onMouseDown={this.selectShip} value={option}>
-            <a>
-              {shiptypename + ' : ' + shipname}
-            </a>
-          </li>
-        )
+        if(parseInt(option)<10000){
+          const shipinfo = this.props.$ships[option],
+            shipname = shipinfo.api_name,
+            shiptypeid = shipinfo.api_stype,
+            shiptypename = $shipTypes[shiptypeid].api_name;
+          out.push(
+            <li onMouseDown={this.selectShip} value={option}>
+              <a>
+                {shiptypename + ' : ' + shipname}
+              </a>
+            </li>
+          )
+        }else{
+          var itemid = parseInt(option)-10000;
+          const iteminfo = this.props.$slotitems[itemid];
+          const itemname = iteminfo.api_name;
+          out.push(
+            <li onMouseDown={this.selectItem} value={itemid}>
+              <a>
+                {itemname}
+              </a>
+            </li>
+          )
+        }
       });
       return out;
     };
+    var keys = ['耐久','装甲','回避','搭载','火力','雷装','对空','对潜','航速','射程','索敌','运','油耗','弹耗'];
     return(
       <div id="breed" className="breed">
         <link rel="stylesheet" href={join(__dirname, 'breed.css')}/>
@@ -237,7 +395,43 @@ export const reactClass = connect(
           </Col>
         </Row>
         <Row>
-          <div dangerouslySetInnerHTML={{__html:this.state.shiphtml}}></div>
+          <div>
+            {
+              keys.map((e,index)=>{
+                return(
+                  <div>
+                    {e}:{this.state.shipstatus[index]}
+                  </div>
+                )
+              })
+            }
+          </div>
+          <div>
+            {this.state.shipid.map((e) =>{
+              return(
+                <Button value={e} onClick={this.changeShip}>{this.props.$ships[e].api_name}</Button>
+              )
+            })}
+          </div>
+          <div>
+            {this.state.shipitems.map((e) =>{
+              var itemid = e.split("_")[0];
+              var carry = e.split("_")[1];
+              var itemname;
+              if(itemid==0){
+                itemname="未装备";
+              }else if(itemid==-1){
+                itemname="不可装备";
+              }else{
+                itemname = this.props.$slotitems[itemid].api_name;
+              }
+              return(
+                <div>
+                  <Button value={itemid}>{itemname}</Button><span>搭载：{carry}</span>
+                </div>
+              )
+            })}
+          </div>
         </Row>
       </div>
     )
