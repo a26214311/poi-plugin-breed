@@ -421,7 +421,7 @@ export const reactClass = connect(
               }
               return(
                 <div>
-                  <Button value={itemid}>{itemname}</Button><span>搭载：{carry}</span>
+                  <Button value={itemid}>{itemname}</Button><span>{carry>0?"搭载："+carry:''}</span>
                 </div>
               )
             })}
