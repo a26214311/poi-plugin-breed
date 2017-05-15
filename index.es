@@ -406,13 +406,7 @@ export const reactClass = connect(
               })
             }
           </div>
-          <div>
-            {this.state.shipid.map((e) =>{
-              return(
-                <Button value={e} onClick={this.changeShip}>{this.props.$ships[e].api_name}</Button>
-              )
-            })}
-          </div>
+
           <div>
             {this.state.shipitems.map((e) =>{
               var itemid = e.split("_")[0];
@@ -429,6 +423,17 @@ export const reactClass = connect(
                 <div>
                   <Button value={itemid}>{itemname}</Button><span>搭载：{carry}</span>
                 </div>
+              )
+            })}
+          </div>
+          <div>
+            {this.state.shipid.map((e) =>{
+              var afterlv = this.props.$ships[e].api_afterlv;
+              return(
+                <span>
+                  <Button value={e} onClick={this.changeShip}>{this.props.$ships[e].api_name}</Button>
+                  {afterlv>0?"lv."+afterlv:""}
+                </span>
               )
             })}
           </div>
