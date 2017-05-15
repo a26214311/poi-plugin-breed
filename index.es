@@ -395,7 +395,7 @@ export const reactClass = connect(
           </Col>
         </Row>
         <Row>
-          <div>
+          <Col xs={4}>
             {
               keys.map((e,index)=>{
                 return(
@@ -405,9 +405,9 @@ export const reactClass = connect(
                 )
               })
             }
-          </div>
+          </Col>
 
-          <div>
+          <Col xs={8}>
             {this.state.shipitems.map((e) =>{
               var itemid = e.split("_")[0];
               var carry = e.split("_")[1];
@@ -425,8 +425,9 @@ export const reactClass = connect(
                 </div>
               )
             })}
-          </div>
-          <div>
+          </Col>
+        </Row>
+          <Col xs={12}>
             {this.state.shipid.map((e) =>{
               var afterlv = this.props.$ships[e].api_afterlv;
               return(
@@ -436,8 +437,7 @@ export const reactClass = connect(
                 </span>
               )
             })}
-          </div>
-        </Row>
+          </Col>
       </div>
     )
   }
