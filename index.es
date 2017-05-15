@@ -10,7 +10,7 @@ import {FormGroup, FormControl, ListGroup, ListGroupItem, Button, Row, Col, Tabl
 
 import {extensionSelectorFactory} from 'views/utils/selectors'
 const fs = require('fs')
-const zh = "阿八嚓哒妸发旮哈或讥咔垃麻拏噢妑七呥撒它拖脱穵夕丫帀坐".split('');
+const zh = "阿八嚓哒妸发旮哈或讥咔垃麻拏噢妑七呥撒它拖脱穵污丫帀坐".split('');
 export const reactClass = connect(
   state => ({
     horizontal: state.config.poi.layout || 'horizontal',
