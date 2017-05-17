@@ -196,6 +196,12 @@ export const reactClass = connect(
     this.handleFormChange(e,'ship');
   }
 
+  changeItem = e => {
+    if(e.currentTarget.value>0){
+      this.handleFormChange(e,'item');
+    }
+  }
+
   handleFormChange(e,type) {
     this.setState({
       searchShipId: e.currentTarget.value,
@@ -504,7 +510,7 @@ export const reactClass = connect(
                   }
                   return (
                     <div>
-                      <Button value={itemid}>{itemname}</Button><span>{carry > 0 ? "搭载：" + carry : ''}</span>
+                      <Button value={itemid}  onClick={this.changeItem}>{itemname}</Button><span>{carry > 0 ? "搭载：" + carry : ''}</span>
                     </div>
                   )
                 })}
@@ -541,7 +547,7 @@ export const reactClass = connect(
               <Col xs={12}>
                 {this.state.itemeatby.map((e) => {
                   return(
-                    <Button value={e}>{this.props.$slotitems[e].api_name}</Button>
+                    <Button value={e} onClick={this.changeItem}>{this.props.$slotitems[e].api_name}</Button>
                   )
                 })}
               </Col>
@@ -551,7 +557,7 @@ export const reactClass = connect(
               <Col xs={12}>
                 {this.state.iteminit.map((e) => {
                   return(
-                    <Button value={e}>{this.props.$ships[e].api_name}</Button>
+                    <Button value={e} onClick={this.changeShip}>{this.props.$ships[e].api_name}</Button>
                   )
                 })}
               </Col>
