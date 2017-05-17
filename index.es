@@ -27,12 +27,17 @@ export const reactClass = connect(
     this.state = {
       ship_targets: this.simplfyship(),
       show_shipList: false,
+      searchType:'',
       input_shipList: '',
-      shipstatus:[],
-      shipid:[],
-      shipitems:[],
-      shiphtml:''
+      shipstatus: [],
+      shipid: [],
+      shipitems: [],
+      shiphtml: '',
+      itemattr: {},
+      itemeatby: [],
+      iteminit: []
     }
+
   }
 
   componentWillReceiveProps(nextProps) {
@@ -206,31 +211,34 @@ export const reactClass = connect(
 
   fetchShipData(shipid){
     var $ships = this.props.$ships;
-    var shipname = $ships[shipid].api_name;
     var url = "http://fleet.diablohu.com/ships/"+shipid+"/";
     var that=this;
     fetch(url).then(function(res){
       return res.text();
     }).then(function(response) {
-      that.parseResponse(response);
+      that.parseResponse(response,'ship');
     })
   }
 
-  parseResponse(response){
-
+  parseResponse(response,type){
     var n = response.indexOf('<main');
     var s1 = response.substring(n);
     var n1 = s1.indexOf('</main>');
     var s2 = s1.substring(0,n1+7);
-
-    var keys = ['耐久','装甲','回避','搭载','火力','雷装','对空','对潜','航速','射程','索敌','运','油耗','弹耗'];
-    var ret = keys.map(e => {
+    if(type=='ship'){
+      var keys = ['耐久','装甲','回避','搭载','火力','雷装','对空','对潜','航速','射程','索敌','运','油耗','弹耗'];
+      var ret = keys.map(e => {
         return this.getElementsByHtml(s2,e);
-    });
-    var shipids = this.getAllShipId(s2);
-    var equips = this.getEquips(s2);
-    console.log(equips);
-    this.setState({shipstatus:ret,shipid:shipids,shipitems:equips});
+      });
+      var shipids = this.getAllShipId(s2);
+      var equips = this.getEquips(s2);
+      this.setState({shipstatus:ret,shipid:shipids,shipitems:equips});
+    }else{
+      var itemattr = this.getItemAttr(s2);
+      var itemeatby = this.getItemEatByOther(s2);
+      var iteminit = this.getItemInitShip(s2);
+      this.setState({itemattr:itemattr,itemeatby:itemeatby,iteminit:iteminit})
+    }
   }
 
   getElementsByHtml(htmlstr,key){
@@ -315,14 +323,88 @@ export const reactClass = connect(
   fetchItemData(itemid){
     var $slotitems = this.props.$slotitems;
     var itemname = $slotitems[itemid].api_name;
-    var url = "https://zh.moegirl.org/"+encodeURIComponent("舰队")+"Collection:"+encodeURIComponent(itemname);
+    var url = "http://fleet.diablohu.com/equipments/"+itemid+"/";
     var that=this;
     fetch(url).then(function(res){
       return res.text();
     }).then(function(response) {
-      that.parseResponse(response);
+      that.parseResponse(response,'item');
     })
   }
+
+  getItemAttr(htmlstr){
+    var n1 = htmlstr.indexOf('属性');
+    if(n1>0){
+      var ret = {};
+      var s1 = htmlstr.substring(n1);
+      var n2 = s1.indexOf('</div>');
+      var s = s1.substring(0,n2);
+      var n = s.indexOf('</small>');
+      while(n>=0){
+        var f = s.substring(0,n);
+        var m = f.lastIndexOf('>');
+        var key = f.substring(m+1);
+        var then = s.substring(n+6);
+        var n3 = then.indexOf('</em>');
+        var f3 = then.substring(0,n3);
+        var n4 = f3.lastIndexOf('>');
+        var value = f3.substring(n4+1);
+        ret[key]=value;
+        s = then.substring(n3);
+        n = s.indexOf('</small>');
+      }
+      return ret;
+    }else{
+      console.log('error get attr');
+      return {};
+    }
+  }
+
+  getItemEatByOther(htmlstr){
+    var n1 = htmlstr.indexOf('可用于改修其他装备');
+    if(n1>0){
+      var s1 = htmlstr.substring(n1);
+      var n2 = s1.indexOf('</div>');
+      var s = s1.substring(0,n2);
+      var key = 'data-equipmentid="';
+      var n = s.indexOf(key);
+      var ret = [];
+      while(n>0){
+        s = s.substring(n+key.length);
+        var n3 = s.indexOf('"');
+        var itemid = s.substring(0,n3);
+        ret.push(itemid);
+        n = s.indexOf(key);
+      }
+      return ret;
+    }else{
+      console.log('error get attr');
+      return [];
+    }
+  }
+  getItemInitShip(htmlstr){
+    var n1 = htmlstr.indexOf('初始装备于');
+    if(n1>0){
+      var s1 = htmlstr.substring(n1);
+      var n2 = s1.indexOf('</div>');
+      var s = s1.substring(0,n2);
+      var key = 'data-shipid="';
+      var n = s.indexOf(key);
+      var ret = [];
+      while(n>0){
+        s = s.substring(n+key.length);
+        var n3 = s.indexOf('"');
+        var itemid = s.substring(0,n3);
+        ret.push(itemid);
+        n = s.indexOf(key);
+      }
+      return ret;
+    }else{
+      console.log('error get attr');
+      return [];
+    }
+  }
+
 
   componentDidMount = () => {
 
@@ -394,50 +476,89 @@ export const reactClass = connect(
             </form>
           </Col>
         </Row>
-        <Row>
-          <Col xs={4}>
-            {
-              keys.map((e,index)=>{
-                return(
-                  <div>
-                    {e}:{this.state.shipstatus[index]}
-                  </div>
-                )
-              })
-            }
-          </Col>
+        {this.state.searchType == 'ship' ?
+          <div>
+            <Row>
+              <Col xs={4}>
+                {
+                  keys.map((e, index) => {
+                    return (
+                      <div>
+                        {e}:{this.state.shipstatus[index]}
+                      </div>
+                    )
+                  })
+                }
+              </Col>
+              <Col xs={8}>
+                {this.state.shipitems.map((e) => {
+                  var itemid = e.split("_")[0];
+                  var carry = e.split("_")[1];
+                  var itemname;
+                  if (itemid == 0) {
+                    itemname = "未装备";
+                  } else if (itemid == -1) {
+                    itemname = "不可装备";
+                  } else {
+                    itemname = this.props.$slotitems[itemid].api_name;
+                  }
+                  return (
+                    <div>
+                      <Button value={itemid}>{itemname}</Button><span>{carry > 0 ? "搭载：" + carry : ''}</span>
+                    </div>
+                  )
+                })}
+              </Col>
+            </Row>
+            <Row>
+              <Col xs={12}>
+                {this.state.shipid.map((e) => {
+                  var afterlv = this.props.$ships[e].api_afterlv;
+                  return (
+                    <span>
+                    <Button value={e} onClick={this.changeShip}>{this.props.$ships[e].api_name}</Button>
+                      {afterlv > 0 ? "lv." + afterlv : ""}
+                  </span>
+                  )
+                })}
+              </Col>
+            </Row>
+          </div>
+          :
+          <div>
+            属性：
+            <Row>
+              <Col xs={12}>
+                {Object.keys(this.state.itemattr).map((e) => {
+                  return(
+                    <Button value={e}>{e}:{this.state.itemattr[e]}</Button>
+                  )
+                })}
+              </Col>
+            </Row>
+            可用于改修其他装备：
+            <Row>
+              <Col xs={12}>
+                {this.state.itemeatby.map((e) => {
+                  return(
+                    <Button value={e}>{this.props.$slotitems[e].api_name}</Button>
+                  )
+                })}
+              </Col>
+            </Row>
+            初始装备于：
+            <Row>
+              <Col xs={12}>
+                {this.state.iteminit.map((e) => {
+                  return(
+                    <Button value={e}>{this.props.$ships[e].api_name}</Button>
+                  )
+                })}
+              </Col>
+            </Row>
 
-          <Col xs={8}>
-            {this.state.shipitems.map((e) =>{
-              var itemid = e.split("_")[0];
-              var carry = e.split("_")[1];
-              var itemname;
-              if(itemid==0){
-                itemname="未装备";
-              }else if(itemid==-1){
-                itemname="不可装备";
-              }else{
-                itemname = this.props.$slotitems[itemid].api_name;
-              }
-              return(
-                <div>
-                  <Button value={itemid}>{itemname}</Button><span>{carry>0?"搭载："+carry:''}</span>
-                </div>
-              )
-            })}
-          </Col>
-        </Row>
-          <Col xs={12}>
-            {this.state.shipid.map((e) =>{
-              var afterlv = this.props.$ships[e].api_afterlv;
-              return(
-                <span>
-                  <Button value={e} onClick={this.changeShip}>{this.props.$ships[e].api_name}</Button>
-                  {afterlv>0?"lv."+afterlv:""}
-                </span>
-              )
-            })}
-          </Col>
+          </div>
+        }
       </div>
     )
   }
