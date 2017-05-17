@@ -203,9 +203,11 @@ export const reactClass = connect(
   }
 
   handleFormChange(e,type) {
+    var value = type=='ship'?this.props.$ships[e.currentTarget.value].api_name:this.props.$slotitems[e.currentTarget.value].api_name
     this.setState({
       searchShipId: e.currentTarget.value,
-      searchType: type
+      searchType: type,
+      input_shipList:value
     });
     if(type=='ship'){
       this.fetchShipData(e.currentTarget.value);
@@ -504,7 +506,9 @@ export const reactClass = connect(
                   if (itemid == 0) {
                     itemname = "未装备";
                   } else if (itemid == -1) {
-                    itemname = "不可装备";
+                    return(
+                      <div></div>
+                    )
                   } else {
                     itemname = this.props.$slotitems[itemid].api_name;
                   }

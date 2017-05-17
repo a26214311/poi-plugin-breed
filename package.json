@@ -1,6 +1,6 @@
 {
   "name": "poi-plugin-breed",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "main": "index.es",
   "description": "A plugin for lookup breed infomation",
   "author": {
