@@ -219,7 +219,7 @@ export const reactClass = connect(
 
   fetchShipData(shipid){
     var $ships = this.props.$ships;
-    var url = "http://fleet.diablohu.com/ships/"+shipid+"/";
+    var url = "http://fleet.diablohu.com/ships/"+shipid+"/?math="+new Date().getDay();
     var that=this;
     fetch(url).then(function(res){
       return res.text();
@@ -331,7 +331,7 @@ export const reactClass = connect(
   fetchItemData(itemid){
     var $slotitems = this.props.$slotitems;
     var itemname = $slotitems[itemid].api_name;
-    var url = "http://fleet.diablohu.com/equipments/"+itemid+"/";
+    var url = "http://fleet.diablohu.com/equipments/"+itemid+"/?math="+new Date().getDay();
     var that=this;
     fetch(url).then(function(res){
       return res.text();
